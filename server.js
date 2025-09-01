@@ -3,31 +3,30 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
-// before routes:
-app.set("trust proxy", 1);
-app.use(cors({
-  origin: [process.env.CORS_ORIGIN, "http://localhost:5173"].filter(Boolean),
-  credentials: true
-}));
 
-// Routes
+// routes
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
 import postRoutes from "./routes/post.js";
 
 dotenv.config();
 
+/* ---- create app FIRST, then configure it ---- */
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Basic middleware
-app.use(cors({ origin: true, credentials: true }));
+app.set("trust proxy", 1);
+
+app.use(
+  cors({
+    origin: [process.env.CORS_ORIGIN, "http://localhost:5173"].filter(Boolean),
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Static uploads (no cache in dev helps with MOV/MP4 reloads)
+// static uploads (dev/prod)
 app.use(
   "/uploads",
   express.static("uploads", {
@@ -37,17 +36,16 @@ app.use(
     setHeaders: (res) => res.setHeader("Cache-Control", "no-store"),
   })
 );
-app.use("/uploads/avatars", express.static("uploads/avatars"));
 
-// Health
+// health
 app.get("/", (_req, res) => res.send("🚀 TikGram API Running…"));
 
-// Mount routes
+// mount routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/posts", postRoutes); // <<<<<< REQUIRED
+app.use("/api/posts", postRoutes);
 
-// Connect DB + start
+/* ---- DB + start ---- */
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
