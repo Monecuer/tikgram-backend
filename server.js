@@ -8,50 +8,43 @@ import cors from "cors";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
 import postRoutes from "./routes/post.js";
+import notificationRoutes from "./routes/notification.js";
 
 dotenv.config();
 
-/* ---- create app FIRST, then configure it ---- */
+/* 1) CREATE APP FIRST */
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+/* 2) THEN CONFIGURE APP */
 app.set("trust proxy", 1);
-
-app.use(
-  cors({
-    origin: [process.env.CORS_ORIGIN, "http://localhost:5173"].filter(Boolean),
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: [process.env.CORS_ORIGIN, "http://localhost:5173"].filter(Boolean),
+  credentials: true,
+}));
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// static uploads (dev/prod)
-app.use(
-  "/uploads",
-  express.static("uploads", {
-    etag: false,
-    lastModified: false,
-    maxAge: 0,
-    setHeaders: (res) => res.setHeader("Cache-Control", "no-store"),
-  })
-);
+// static uploads (no cache)
+app.use("/uploads", express.static("uploads", {
+  etag: false, lastModified: false, maxAge: 0,
+  setHeaders: (res) => res.setHeader("Cache-Control", "no-store"),
+}));
 
 // health
 app.get("/", (_req, res) => res.send("🚀 TikGram API Running…"));
+app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
-// mount routes
+/* 3) MOUNT ROUTES */
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/notifications", notificationRoutes);
 
-/* ---- DB + start ---- */
-mongoose
-  .connect(process.env.MONGO_URI)
+/* 4) DB + START */
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    app.listen(PORT, () =>
-      console.log(`✅ Backend running on http://localhost:${PORT}`)
-    );
+    app.listen(PORT, () => console.log(`✅ Backend running on http://localhost:${PORT}`));
   })
   .catch((err) => {
     console.error("❌ DB connection error:", err);

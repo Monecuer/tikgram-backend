@@ -1,30 +1,33 @@
-// tikgram-backend/routes/notification.js
 import express from "express";
-import Notification from "../models/Notification.js";
 import auth from "../middleware/authMiddleware.js";
+import Notification from "../models/Notification.js";
 
 const router = express.Router();
 
-// GET /api/notifications  -> latest 50 for me
+// Get notifications for the logged-in user
 router.get("/", auth, async (req, res) => {
-  const items = await Notification.find({ recipient: req.user.id })
-    .sort({ createdAt: -1 })
-    .limit(50)
-    .populate("actor", "username avatarUrl")
-    .populate("post", "_id caption mediaUrl mediaType createdAt");
-  res.json(items);
+  try {
+    const list = await Notification.find({ recipient: req.user.id })
+      .populate("actor", "username avatarUrl")
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.json(list);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-// PATCH /api/notifications/:id/read
-router.patch("/:id/read", auth, async (req, res) => {
-  await Notification.updateOne({ _id: req.params.id, recipient: req.user.id }, { $set: { isRead: true } });
-  res.json({ ok: true });
-});
-
-// POST /api/notifications/read  (mark all read)
+// Mark notifications as read
 router.post("/read", auth, async (req, res) => {
-  await Notification.updateMany({ recipient: req.user.id, isRead: false }, { $set: { isRead: true } });
-  res.json({ ok: true });
+  try {
+    await Notification.updateMany(
+      { recipient: req.user.id, read: false },
+      { $set: { read: true } }
+    );
+    res.json({ msg: "All marked as read" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 export default router;
