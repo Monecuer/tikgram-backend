@@ -10,10 +10,11 @@ import notificationRoutes from "./routes/notification.js";
 
 dotenv.config();
 
-const app = express();              // ✅ create app FIRST
+const app = express();              // create app FIRST
 const PORT = process.env.PORT || 5001;
 
-app.set("trust proxy", 1);          // then configure
+app.set("trust proxy", 1);
+
 app.use(cors({
   origin: [process.env.CORS_ORIGIN, "http://localhost:5173"].filter(Boolean),
   credentials: true,
@@ -22,7 +23,9 @@ app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static("uploads", {
-  etag: false, lastModified: false, maxAge: 0,
+  etag: false,
+  lastModified: false,
+  maxAge: 0,
   setHeaders: (res) => res.setHeader("Cache-Control", "no-store"),
 }));
 
@@ -35,9 +38,10 @@ app.use("/api/posts", postRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => app.listen(PORT, () => console.log(`✅ Backend running on http://localhost:${PORT}`)))
+  .then(() => app.listen(PORT, () => {
+    console.log(`✅ Backend running on http://localhost:${PORT}`);
+  }))
   .catch((err) => {
     console.error("❌ DB connection error:", err);
     process.exit(1);
   });
-'@ | Set-Content server.js -Encoding UTF8
